@@ -8,7 +8,13 @@ Steps:
 ![image](https://github.com/tylerdionne/ROPEMPORIUM2023/assets/143131384/cc3306d0-e403-44f2-91e1-8e58d85747ba)
 - This gives us valuable information. We now know we want to perfrom a stack pivot to that memory address, send our full rop chain, and then send our stack pivot rop.
 - Therefore we must take in the address printed by the program each time and store that as the address we want to pivot the stack to.
-- We can now start constructing our first payload which will pivot the stack. 
+- Before we start constructing our payloads we should look to see if we have a usefulGadgets function in the binary like we did in a few of the previous binaries. Using objdump -d pivot we see we do indeed have one of these with the following gadgets pop rax; ret; at 0x4009bb, xchg rsp, rax; ret; at 0x4009bd, mov rax, [rax]; ret; at 0x4009c0, add rax, rbp; ret; at 0x4009c4. We will use these gadgets to construct our payloads. See screenshot below:
+![image](https://github.com/tylerdionne/ROPEMPORIUM2023/assets/143131384/36fdd26b-a0c3-403d-9752-7af2a1f692d2)
+- We can now start constructing our first payload which will pivot the stack. This will be done by setting rax to the address we want to pivot to and then using the xchg gadget to set the stack pointer to this address. The ROP chain for this payload will be the following [pop rax; ret; > pivot address > xchg rsp, rax; ret;]
+- We can now start constructing our second payload which will contain our large ROP chain that calls the ret2win function. The first thing we must do is call the foothold_function to populate the .got.plt because it is not called during normal execution of the program. We need to do this in order to calculate the offset to the ret2win function that we want to call. We can then do this by getting the symbol of each function in the shared object libpivot.so and subtracting the address of the foothold_function from the address of the ret2win function. We then want to set rax to the address of the foothold_function so we can then use the add rax, rbp; ret; gadget so that rax will contain the address of the ret2win function. We need a pop rbp; ret; gadget to set the value of rbp and using the command ropper -f pivot | grep rbp we find that we have one of these gadgets at 0x4007c8. Once we have the address of the ret2win function in rax we just need to use a call rax; ret; gadget which invokes the function whose address is stored in rax. Using the command ropper -f pivot | grep rax we find that we have a call rax; ret; gadget at 0x4006b0. We can now construct the ROP chain in the following manner [call plt foothold_function > pop rax; ret; > got address of foothold_function > mov rax, [rax] > pop rbp; ret; > offset to ret2win > add rax, rbp; ret; > call rax; ret;]
+- Upon running the program we retrieve the flag:
+![image](https://github.com/tylerdionne/ROPEMPORIUM2023/assets/143131384/155c16ca-2f3a-488e-b20a-72439e53905f)
 
+See solution at: pivot.py
 
 
