@@ -6,6 +6,6 @@ Steps:
 - Knowing that this is the function we want to call, we can overwrite RSP with the address of this function.
 
 See the solution at:
-# ret2win.py
+ret2win.py
 
 
